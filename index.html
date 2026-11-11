@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fc">
+  <meta name="description" content="ระบบตรวจสอบกล้องเว็บแคมสำหรับระบบ FACE ATTENDANCE">
+  <title>FACE ATTENDANCE | ภาพรวม</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#overview" aria-label="FACE ATTENDANCE หน้าภาพรวม">
+        <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="24" height="19" rx="6"/><circle cx="16" cy="16.5" r="5.5"/><path d="m11 4 2-2h6l2 2"/></svg></span>
+        <span><b>FACE<span class="brand-light">ATTENDANCE</span></b><small>SMART CLASSROOM</small></span>
+      </a>
+      <div class="school-switch"><span class="school-icon">✦</span><span><b>โรงเรียนสาธิตศึกษา</b><small>ภาคเรียนที่ 1 / 2568</small></span><span class="chevron">⌄</span></div>
+      <div class="nav-caption">เมนูหลัก</div>
+      <nav class="nav-list" aria-label="เมนูหลัก">
+        <a class="nav-item active" href="#overview"><span class="nav-icon">◫</span>ภาพรวม</a>
+        <a class="nav-item" href="#camera"><span class="nav-icon">▣</span>กล้องและเช็กชื่อ<span class="nav-arrow">↗</span></a>
+        <a class="nav-item" href="attendance.html"><span class="nav-icon">▣</span>เช็กชื่อ</a>
+        <a class="nav-item" href="students.html"><span class="nav-icon">♙</span>นักเรียน</a>
+        <a class="nav-item" href="reports.html"><span class="nav-icon">▤</span>รายงาน</a><a class="nav-item" href="users.html" data-admin-only hidden><span class="nav-icon">♙</span>บัญชีผู้ใช้</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="privacy-note"><span>♧</span><div><b>ความเป็นส่วนตัวสำคัญ</b><p>กล้องจะทำงานเมื่อคุณกดเปิดเท่านั้น</p></div></div><button class="user-card" type="button" data-logout aria-label="ออกจากระบบ"><span class="avatar">ค</span><span class="user-info"><b data-user-name>ผู้ใช้</b><small data-user-role>ผู้ใช้ระบบ</small></span><span class="dots">ออก</span></button></div>
+    </aside>
+    <main class="main-content" id="overview">
+      <header class="topbar"><button class="menu-toggle" id="menuToggle" aria-label="เปิดเมนู">☰</button><div class="breadcrumb">หน้าหลัก <span>/</span> <b>ภาพรวม</b></div><div class="top-actions"><span class="today" id="today"></span><a class="nav-item attendance-link" href="attendance.html"><span class="nav-icon">▣</span>เช็กชื่อ</a><span class="top-avatar">ค</span></div></header>
+      <div class="page-wrap">
+        <section class="welcome-row"><div><div class="eyebrow"><span class="live-dot"></span>ระบบพร้อมใช้งาน</div><h1>สวัสดีตอนเช้า, คุณครู 👋</h1><p class="subheading">ภาพรวมการเข้าเรียนและสถานะกล้องของวันนี้</p></div><button class="outline-button" id="refreshButton"><span>⟳</span> รีเฟรชข้อมูล</button></section>
+        <section class="stats-grid" aria-label="สรุปสถิติวันนี้">
+          <article class="stat-card"><div class="stat-top"><span>นักเรียนทั้งหมด</span><span class="stat-icon purple">♙</span></div><div class="stat-number">128 <small>คน</small></div><div class="stat-foot">ข้อมูลตัวอย่างสำหรับ Phase 1</div></article>
+          <article class="stat-card"><div class="stat-top"><span>มาเรียนแล้ว</span><span class="stat-icon green">✓</span></div><div class="stat-number">96 <small>คน</small></div><div class="stat-foot"><span class="green-text">75%</span> ของนักเรียนทั้งหมด</div></article>
+          <article class="stat-card"><div class="stat-top"><span>มาสาย</span><span class="stat-icon orange">◷</span></div><div class="stat-number">8 <small>คน</small></div><div class="stat-foot"><span class="orange-text">วันนี้</span> · ข้อมูลตัวอย่าง</div></article>
+          <article class="stat-card"><div class="stat-top"><span>ยังไม่เช็กชื่อ</span><span class="stat-icon blue">…</span></div><div class="stat-number">24 <small>คน</small></div><div class="stat-foot">ยังไม่มีรายการเช็กชื่อ</div></article>
+        </section>
+        <section class="content-grid">
+          <article class="panel camera-panel" id="camera">
+            <div class="panel-heading"><div><h2>กล้องเช็กชื่อ</h2><p>ตรวจสอบการเชื่อมต่อเว็บแคม</p></div><span class="connection" id="connection"><i></i><span id="connectionText">ยังไม่เชื่อมต่อ</span></span></div>
+            <div class="camera-stage" id="cameraStage">
+              <video id="cameraVideo" autoplay muted playsinline aria-label="ภาพสดจากกล้อง"></video>
+              <div class="face-guide" aria-hidden="true"><span></span></div><div class="detected-face-box" id="detectedFaceBox" aria-hidden="true" hidden></div><div class="face-detect-status" id="faceDetectStatus" role="status">จัดใบหน้าให้อยู่ในกรอบ</div>
+              <div class="camera-placeholder" id="cameraPlaceholder"><span class="camera-art"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="16" width="48" height="36" rx="9"/><circle cx="32" cy="34" r="11"/><path d="M22 16l4-6h12l4 6"/></svg></span><b id="cameraMessage">กล้องยังไม่ทำงาน</b><span id="cameraHelp">กดปุ่มด้านล่างเพื่อเลือกและเปิดกล้อง</span></div>
+              <span class="camera-label"><i></i> LIVE</span><span class="camera-time" id="cameraTime">--:--:--</span>
+            </div>
+            <div class="camera-controls"><label for="cameraSelect" class="visually-hidden">เลือกกล้อง</label><div class="select-wrap"><span>▣</span><select id="cameraSelect" disabled><option value="">เลือกกล้อง</option></select><span class="select-caret">⌄</span></div><button class="primary-button" id="startCamera"><span>▶</span> เปิดกล้อง</button><button class="stop-button" id="stopCamera" disabled><span>■</span> ปิด</button></div>
+            <div class="camera-recognition"><button class="outline-button" id="verifyFace" disabled>ตรวจสอบใบหน้าเพื่อเช็กชื่อ</button><label class="outline-button upload-face" for="faceImageInput">เลือกภาพใบหน้า</label><input id="faceImageInput" type="file" accept="image/*" hidden></div>
+            <div class="face-review" id="faceReview" hidden></div>
+            <div class="camera-footnote"><span>ⓘ</span><span>ภาพจากกล้องแสดงเฉพาะบนอุปกรณ์นี้ และไม่ถูกบันทึก</span></div>
+          </article>
+          <article class="panel overview-panel"><div class="panel-heading"><div><h2>การเข้าเรียนวันนี้</h2><p>ภาพรวมตามสถานะ · ข้อมูลตัวอย่าง</p></div><span class="more-button" aria-hidden="true">···</span></div><div class="chart-area"><div class="donut" role="img" aria-label="มาเรียน 75 เปอร์เซ็นต์ มาสาย 6 เปอร์เซ็นต์ ยังไม่เช็กชื่อ 19 เปอร์เซ็นต์"><div class="donut-center"><b>75<span>%</span></b><small>มาเรียนแล้ว</small></div></div><div class="legend"><div><i class="legend-dot purple-dot"></i><span>มาเรียน</span><b>96</b></div><div><i class="legend-dot orange-dot"></i><span>มาสาย</span><b>8</b></div><div><i class="legend-dot gray-dot"></i><span>ยังไม่เช็กชื่อ</span><b>24</b></div></div></div><div class="class-summary"><span>ชั้นเรียนที่มีนักเรียน</span><b>4 ห้อง</b></div><div class="class-bars"><div><span>ม.1/1</span><div class="bar-bg"><i style="width:82%"></i></div><b>82%</b></div><div><span>ม.1/2</span><div class="bar-bg"><i style="width:76%"></i></div><b>76%</b></div><div><span>ม.2/1</span><div class="bar-bg"><i style="width:69%"></i></div><b>69%</b></div><div><span>ม.2/2</span><div class="bar-bg"><i style="width:73%"></i></div><b>73%</b></div></div></article>
+        </section>
+        <section class="panel activity-panel"><div class="panel-heading activity-heading"><div><h2>รายการเช็กชื่อล่าสุด</h2><p>รายการจากฐานข้อมูลวันนี้</p></div><a class="text-button" href="attendance.html">ดูทั้งหมด <span>→</span></a></div><div class="table-scroll"><table><thead><tr><th>นักเรียน</th><th>รหัสนักเรียน</th><th>ชั้น / ห้อง</th><th>เวลา</th><th>สถานะ</th></tr></thead><tbody>
+            <tr><td><span class="student-cell"><span class="student-avatar a1">ภ</span><b>ภัทรวดี สุขใจ</b></span></td><td>ST-2024-001</td><td>ม.1 / 1</td><td>08:02 น.</td><td><span class="status-pill present">● มาเรียน</span></td></tr>
+            <tr><td><span class="student-cell"><span class="student-avatar a2">ธ</span><b>ธนกร ใจดี</b></span></td><td>ST-2024-014</td><td>ม.1 / 1</td><td>08:16 น.</td><td><span class="status-pill late">● มาสาย</span></td></tr>
+            <tr><td><span class="student-cell"><span class="student-avatar a3">น</span><b>นภัสสร แสงทอง</b></span></td><td>ST-2024-027</td><td>ม.1 / 2</td><td>08:04 น.</td><td><span class="status-pill present">● มาเรียน</span></td></tr>
+          </tbody></table></div><div class="table-mobile-hint">เลื่อนตารางเพื่อดูข้อมูลทั้งหมด</div></section>
+        <footer class="page-footer"><span>FACE ATTENDANCE <span class="footer-sep">·</span> ระบบเช็กชื่อที่ครูตรวจยืนยัน</span><span>ภาพจากกล้องประมวลผลบนอุปกรณ์</span></footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="vendor/supabase.js"></script><script src="runtime-config.js"></script><script src="auth.js"></script><script src="/vendor/human.js"></script><script src="camera-adapter.js"></script><script src="face-engine.js"></script><script src="app.js"></script><script src="dashboard.js"></script>
+</body>
+</html>

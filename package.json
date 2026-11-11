@@ -1,0 +1,25 @@
+{
+  "name": "face-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Thai FACE ATTENDANCE local-first application with webcam recognition",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "start": "node --env-file=.env server.mjs",
+    "check": "node --check server.mjs && node --check db.mjs && node --check setup.mjs && node --check auth.js && node --check login.js && node --check app.js && node --check face-engine.js && node --check students-api.js && node --check dashboard.js && node --check attendance.js && node --check reports.js && node --check xlsx-export.js && node --check users.js && node --check settings.js",
+    "smoke": "node test/smoke.mjs",
+    "test:camera": "node test/camera-adapter.mjs",
+    "test:face": "node test/face-engine.mjs",
+    "test:xlsx": "node test/xlsx-export.mjs",
+    "test:bootstrap": "node test/login-bootstrap.mjs",
+    "test": "npm run check && npm run smoke && npm run test:camera && npm run test:face && npm run test:xlsx && npm run test:bootstrap"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "@vladmandic/human": "3.3.6"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

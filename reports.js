@@ -1,0 +1,15 @@
+import {buildAttendanceWorkbook} from './xlsx-export.js';
+(() => {
+  const $=selector=>document.querySelector(selector);let rows=[];
+  const dt=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok'}).format(new Date());$('#fromDate').value=dt;$('#toDate').value=dt;
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const show=v=>({present:'มาเรียน',late:'มาสาย',absent:'ขาดเรียน',excused:'ลา'}[v]||'ยังไม่เช็กชื่อ');
+  const values=()=>[['วันที่','รหัสนักเรียน','ชื่อ','นามสกุล','ชั้น','ห้อง','สถานะ','เวลา','แหล่งข้อมูล'],...rows.map(r=>[r.date,r.studentCode,r.firstName,r.lastName,r.grade,r.room,show(r.status),r.checkedAt?new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit'}).format(new Date(r.checkedAt))+' น.':'',r.source||''])];
+  function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  function notify(message){const toast=$('#toast');toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3000);}
+  async function search(){const p=new URLSearchParams({from:$('#fromDate').value,to:$('#toDate').value});if($('#gradeFilter').value)p.set('grade',$('#gradeFilter').value.trim());if($('#roomFilter').value)p.set('room',$('#roomFilter').value.trim());if($('#codeFilter').value)p.set('studentCode',$('#codeFilter').value.trim());try{const data=await FA.api('/api/reports?'+p);rows=data.records;$('#reportRows').innerHTML=rows.map(r=>`<tr><td>${esc(r.date||'—')}</td><td>${esc(r.studentCode)}</td><td>${esc(r.firstName)} ${esc(r.lastName)}</td><td>${esc(r.grade)} / ${esc(r.room)}</td><td>${show(r.status)}</td><td>${r.checkedAt?new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit'}).format(new Date(r.checkedAt))+' น.':'—'}</td><td>${esc(r.source||'—')}</td></tr>`).join('')||'<tr><td colspan="7">ไม่พบข้อมูล</td></tr>';$('#reportSummary').textContent=`${rows.length} รายการ · ${data.from} ถึง ${data.to}`;}catch(error){notify(error.message);}}
+  $('#searchReport').addEventListener('click',search);
+  $('#exportReport').addEventListener('click',()=>{if(!rows.length)return notify('ไม่มีข้อมูลสำหรับส่งออก');const csv=values().map(row=>row.map(value=>'"'+String(value??'').replaceAll('"','""')+'"').join(',')).join('\r\n');download(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),`attendance-report-${$('#fromDate').value}-${$('#toDate').value}.csv`);});
+  $('#exportExcel').addEventListener('click',()=>{if(!rows.length)return notify('ไม่มีข้อมูลสำหรับส่งออก');try{download(new Blob([buildAttendanceWorkbook(values())],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`attendance-report-${$('#fromDate').value}-${$('#toDate').value}.xlsx`);}catch(error){notify(`สร้างไฟล์ Excel ไม่สำเร็จ: ${error.message}`);}});
+  $('#printReport').addEventListener('click',()=>window.print());$('#menuToggle').addEventListener('click',()=>$('#sidebar').classList.toggle('open'));window.addEventListener('fa:ready',search);
+})();

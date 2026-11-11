@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+let stopped=0,played=0,lastConstraints;
+const track={stop(){stopped++;},addEventListener(){}};
+const stream={getTracks:()=>[track],getVideoTracks:()=>[track]};
+const devices=[{kind:'videoinput',deviceId:'webcam-1',label:'Test Webcam'}];
+const sandbox={navigator:{mediaDevices:{async getUserMedia(constraints){lastConstraints=constraints;return stream;},async enumerateDevices(){return devices;}}}};
+sandbox.window=sandbox;
+vm.runInNewContext(fs.readFileSync(new URL('../camera-adapter.js',import.meta.url),'utf8'),sandbox);
+const video={srcObject:null,async play(){played++;}};
+const adapter=new sandbox.CameraAdapters.WebcamAdapter(video);
+assert.deepEqual(await adapter.listDevices(),devices);
+assert.equal(await adapter.open('webcam-1'),stream);
+assert.equal(video.srcObject,stream);
+assert.equal(played,1);
+assert.equal(lastConstraints.video.deviceId.exact,'webcam-1');
+assert.equal(lastConstraints.audio,false);
+await adapter.close();
+assert.equal(stopped,1);
+assert.equal(video.srcObject,null);
+assert.equal(adapter.stream,null);
+console.log('ผ่าน: เลือก webcam, เปิด stream, แสดงผล และปิด track');
