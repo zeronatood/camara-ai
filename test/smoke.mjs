@@ -28,7 +28,11 @@ try{
   let health; for(let i=0;i<50;i++){try{health=await fetch(base+'/api/health');if(health.ok)break}catch{}await delay(100)} assert(health?.ok,'server startup');
   let login=await request('/api/auth/login',{username:'testadmin',password},'POST');assert(login.status===200,'admin login');cookie=login.response.headers.get('set-cookie').split(';')[0];csrf=login.data.csrf;
   let data=await request('/api/students');assert(data.status===200&&data.data.students.length===1,'student list');
-  let created=await request('/api/students',{studentCode:'SMOKE-002',firstName:'ตัวอย่าง',lastName:'ทดสอบ',grade:'ม.2',room:'2'},'POST');assert(created.status===201,'create student');
+  const portrait='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBD';
+  let created=await request('/api/students',{studentCode:'SMOKE-002',firstName:'ตัวอย่าง',lastName:'ทดสอบ',grade:'ม.2',room:'2',portraitData:portrait},'POST');assert(created.status===201&&created.data.portraitData===portrait,'create student with portrait');
+  let studentList=await request('/api/students');assert(studentList.data.students.find(s=>s.studentCode==='SMOKE-002')?.portraitData===portrait,'student list returns saved portrait');
+  let invalidPortrait=await request('/api/students',{studentCode:'SMOKE-003',firstName:'ผิด',lastName:'ชนิด',grade:'ม.2',room:'2',portraitData:'data:image/png;base64,AAAA'},'POST');assert(invalidPortrait.status===400,'reject unsupported portrait payload');
+  let removePortrait=await request(`/api/students/${created.data.id}`,{studentCode:'SMOKE-002',firstName:'ตัวอย่าง',lastName:'ทดสอบ',grade:'ม.2',room:'2',portraitData:null},'PATCH');assert(removePortrait.status===200&&removePortrait.data.portraitData===null,'remove student portrait');
   let consent=await request(`/api/students/${studentId}/consent`,{granted:true},'POST');assert(consent.status===200,'grant consent');
   const embedding=Array.from({length:1024},(_,i)=>i===0?1:0);
   let enroll=await request('/api/face/enroll',{studentId,embedding},'POST');assert(enroll.status===201,'encrypted face enrollment');
@@ -50,6 +54,6 @@ try{
   let denied=await request('/api/students',{studentCode:'NOPE',firstName:'No',lastName:'Access',grade:'ม.1',room:'1'},'POST');assert(denied.status===403,'teacher admin-only restriction');
   let deniedUsers=await request('/api/users');assert(deniedUsers.status===403,'teacher cannot manage accounts');
   let deniedSettings=await request('/api/settings',{startsAt:'07:00',lateAfter:'08:00',matchThreshold:0.9},'PATCH');assert(deniedSettings.status===403,'teacher cannot change system settings');
-  console.log('ผ่าน: login/role, จัดการบัญชีและสิทธิ์, นักเรียน/consent, ตั้งค่าเวลาและเกณฑ์ใบหน้า, เข้ารหัสแม่แบบ, teacher review, กันเช็กชื่อซ้ำ, report และ dashboard');
+  console.log('ผ่าน: login/role, จัดการบัญชีและสิทธิ์, นักเรียน/รูปประจำตัว/consent, ตั้งค่าเวลาและเกณฑ์ใบหน้า, เข้ารหัสแม่แบบ, teacher review, กันเช็กชื่อซ้ำ, report และ dashboard');
 }catch(error){console.error('ทดสอบไม่ผ่าน:',error.stack||error);process.exitCode=1;}
 finally{child.kill();await delay(300);for(const file of [dbPath,dbPath+'-shm',dbPath+'-wal'])try{fs.rmSync(file,{force:true})}catch{}}

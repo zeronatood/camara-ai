@@ -63,7 +63,12 @@ function latestConsent(studentId) {
 }
 function studentRow(row) {
   const consent=latestConsent(row.id);
-  return { id:row.id, studentCode:row.student_code, firstName:row.first_name, lastName:row.last_name, grade:row.grade, room:row.room, active:Boolean(row.active), consent:consent?.status || 'none', consentAt:consent?.recordedAt || null, faceStatus:db.prepare('SELECT 1 AS yes FROM face_templates WHERE student_id=?').get(row.id)?'registered':'none' };
+  return { id:row.id, studentCode:row.student_code, firstName:row.first_name, lastName:row.last_name, grade:row.grade, room:row.room, active:Boolean(row.active), portraitData:row.portrait_data||null, consent:consent?.status || 'none', consentAt:consent?.recordedAt || null, faceStatus:db.prepare('SELECT 1 AS yes FROM face_templates WHERE student_id=?').get(row.id)?'registered':'none' };
+}
+function portraitValue(value) {
+  if(value===null||value===undefined||value==='')return null;
+  if(typeof value!=='string'||value.length>180_000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))throw Object.assign(new Error('รูปประจำตัวไม่ถูกต้องหรือมีขนาดใหญ่เกินกำหนด'),{status:400});
+  return value;
 }
 function auditSafe(user, action, entity, id, details = {}) { audit(db,user.id,action,entity,id,details); }
 function auditDetails(obj) { return JSON.stringify(obj).slice(0,300); }
@@ -307,15 +312,15 @@ const server=http.createServer(async (req,res)=>{
     const current=await auth(req,res,rolesWrite,true);if(!current)return;
     if(req.method==='POST' && url.pathname==='/api/students') {
       if(current.user.role!=='admin')return fail(res,403,'เฉพาะผู้ดูแลระบบจัดการข้อมูลนักเรียนได้');
-      const data=await body(req,8000);const values=[String(data.studentCode||'').trim(),String(data.firstName||'').trim(),String(data.lastName||'').trim(),String(data.grade||'').trim(),String(data.room||'').trim()];
+      const data=await body(req,256000);const values=[String(data.studentCode||'').trim(),String(data.firstName||'').trim(),String(data.lastName||'').trim(),String(data.grade||'').trim(),String(data.room||'').trim()];
       if(values.some(value=>!value)||values.some(value=>value.length>80))return fail(res,400,'กรุณากรอกข้อมูลนักเรียนให้ครบ');
-      try{const result=db.prepare('INSERT INTO students(student_code,first_name,last_name,grade,room) VALUES(?,?,?,?,?)').run(...values);auditSafe(current.user,'student.create','student',result.lastInsertRowid,{});return json(res,201,studentRow(db.prepare('SELECT * FROM students WHERE id=?').get(result.lastInsertRowid)));}catch{return fail(res,409,'รหัสนักเรียนซ้ำ');}
+      try{const result=db.prepare('INSERT INTO students(student_code,first_name,last_name,grade,room,portrait_data) VALUES(?,?,?,?,?,?)').run(...values,portraitValue(data.portraitData));auditSafe(current.user,'student.create','student',result.lastInsertRowid,{hasPortrait:Boolean(data.portraitData)});return json(res,201,studentRow(db.prepare('SELECT * FROM students WHERE id=?').get(result.lastInsertRowid)));}catch(error){if(error.status)throw error;return fail(res,409,'รหัสนักเรียนซ้ำ');}
     }
     if(req.method==='PATCH' && /^\/api\/students\/\d+$/.test(url.pathname)) {
       if(current.user.role!=='admin')return fail(res,403,'เฉพาะผู้ดูแลระบบจัดการข้อมูลนักเรียนได้');
-      const id=Number(url.pathname.split('/').pop());const data=await body(req,8000);const values=[String(data.studentCode||'').trim(),String(data.firstName||'').trim(),String(data.lastName||'').trim(),String(data.grade||'').trim(),String(data.room||'').trim()];
+      const id=Number(url.pathname.split('/').pop());const data=await body(req,256000);const values=[String(data.studentCode||'').trim(),String(data.firstName||'').trim(),String(data.lastName||'').trim(),String(data.grade||'').trim(),String(data.room||'').trim()];
       if(values.some(value=>!value)||values.some(value=>value.length>80))return fail(res,400,'กรุณากรอกข้อมูลนักเรียนให้ครบ');
-      try{db.prepare(`UPDATE students SET student_code=?,first_name=?,last_name=?,grade=?,room=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND active=1`).run(...values,id);auditSafe(current.user,'student.update','student',id,{});return json(res,200,studentRow(db.prepare('SELECT * FROM students WHERE id=?').get(id)));}catch{return fail(res,409,'รหัสนักเรียนซ้ำ');}
+      try{const hasPortrait=Object.hasOwn(data,'portraitData');const statement=hasPortrait?`UPDATE students SET student_code=?,first_name=?,last_name=?,grade=?,room=?,portrait_data=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND active=1`:`UPDATE students SET student_code=?,first_name=?,last_name=?,grade=?,room=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND active=1`;db.prepare(statement).run(...values,...(hasPortrait?[portraitValue(data.portraitData)]:[]),id);auditSafe(current.user,'student.update','student',id,{portraitChanged:hasPortrait});return json(res,200,studentRow(db.prepare('SELECT * FROM students WHERE id=?').get(id)));}catch(error){if(error.status)throw error;return fail(res,409,'รหัสนักเรียนซ้ำ');}
     }
     if(req.method==='DELETE' && /^\/api\/students\/\d+$/.test(url.pathname)) {
       if(current.user.role!=='admin')return fail(res,403,'เฉพาะผู้ดูแลระบบจัดการข้อมูลนักเรียนได้');

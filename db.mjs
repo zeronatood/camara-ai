@@ -29,6 +29,7 @@ export function openDatabase() {
       student_code TEXT NOT NULL UNIQUE COLLATE NOCASE,
       first_name TEXT NOT NULL,
       last_name TEXT NOT NULL,
+      portrait_data TEXT,
       classroom_id INTEGER REFERENCES classrooms(id) ON DELETE RESTRICT,
       grade TEXT NOT NULL,
       room TEXT NOT NULL,
@@ -97,6 +98,8 @@ export function openDatabase() {
     );
     CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs(created_at DESC);
   `);
+  const studentColumns=new Set(db.prepare('PRAGMA table_info(students)').all().map(column=>column.name));
+  if(!studentColumns.has('portrait_data'))db.exec('ALTER TABLE students ADD COLUMN portrait_data TEXT');
   return db;
 }
 

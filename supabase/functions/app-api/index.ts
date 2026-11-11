@@ -19,7 +19,12 @@ async function consentMap(ids:number[]) {
 }
 function studentDto(s:any,consents:Map<number,string>) {
   const c=Array.isArray(s.classrooms)?s.classrooms[0]:s.classrooms;
-  return {id:s.id,studentCode:s.student_code,firstName:s.first_name,lastName:s.last_name,grade:c?.grade||'',room:c?.room||'',active:s.active,consent:consents.get(s.id)||'none',consentAt:null,faceStatus:s.face_registered?'registered':'none'};
+  return {id:s.id,studentCode:s.student_code,firstName:s.first_name,lastName:s.last_name,grade:c?.grade||'',room:c?.room||'',active:s.active,portraitData:s.portrait_data||null,consent:consents.get(s.id)||'none',consentAt:null,faceStatus:s.face_registered?'registered':'none'};
+}
+function portraitValue(value:unknown) {
+  if(value===null||value===undefined||value==='')return null;
+  if(typeof value!=='string'||value.length>180_000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))throw Object.assign(new Error('รูปประจำตัวไม่ถูกต้องหรือมีขนาดใหญ่เกินกำหนด'),{status:400});
+  return value;
 }
 async function log(actor:string, action:string, entity:string, id:string|number, details:Record<string,unknown>={}) { await audit(actor,action,entity,id,details); }
 async function handle(req:Request) {
@@ -40,7 +45,7 @@ async function handle(req:Request) {
   if(path==='/api/auth/logout'&&method==='POST')return ok({ok:true});
 
   if(path==='/api/students'&&method==='GET'){
-    const rows=checked(await db.from('students').select('id,student_code,first_name,last_name,active,face_registered,classrooms(grade,room)').eq('active',true).order('student_code')) as any[];
+    const rows=checked(await db.from('students').select('id,student_code,first_name,last_name,portrait_data,active,face_registered,classrooms(grade,room)').eq('active',true).order('student_code')) as any[];
     const consents=await consentMap(rows.map(s=>s.id)); return ok({students:rows.map(s=>studentDto(s,consents))});
   }
   if(path==='/api/students'&&method==='POST'){
@@ -49,7 +54,7 @@ async function handle(req:Request) {
     if(!code||!first||!last||!grade||!room||[code,first,last,grade,room].some(x=>x.length>80))return fail('กรุณากรอกข้อมูลนักเรียนให้ครบ');
     let classroom=checked(await db.from('classrooms').select('id').eq('grade',grade).eq('room',room).maybeSingle()) as any;
     if(!classroom)classroom=checked(await db.from('classrooms').insert({grade,room}).select('id').single()) as any;
-    const row=checked(await db.from('students').insert({student_code:code,first_name:first,last_name:last,grade,room,classroom_id:classroom.id}).select('id,student_code,first_name,last_name,active,face_registered,classrooms(grade,room)').single()) as any;
+    const row=checked(await db.from('students').insert({student_code:code,first_name:first,last_name:last,portrait_data:portraitValue(data.portraitData),grade,room,classroom_id:classroom.id}).select('id,student_code,first_name,last_name,portrait_data,active,face_registered,classrooms(grade,room)').single()) as any;
     await log(user.id,'student.create','student',row.id);return ok(studentDto(row,new Map()),201);
   }
   const studentAction=path.match(/^\/api\/students\/(\d+)$/);
@@ -57,7 +62,8 @@ async function handle(req:Request) {
     if(!admin)return fail('เฉพาะผู้ดูแลระบบจัดการข้อมูลนักเรียนได้',403);
     const data=input.body||{};const id=Number(studentAction[1]);const grade=String(data.grade||'').trim(),room=String(data.room||'').trim();
     let classroom=checked(await db.from('classrooms').select('id').eq('grade',grade).eq('room',room).maybeSingle()) as any;if(!classroom)classroom=checked(await db.from('classrooms').insert({grade,room}).select('id').single()) as any;
-    const row=checked(await db.from('students').update({student_code:String(data.studentCode||'').trim(),first_name:String(data.firstName||'').trim(),last_name:String(data.lastName||'').trim(),grade,room,classroom_id:classroom.id,updated_at:new Date().toISOString()}).eq('id',id).eq('active',true).select('id,student_code,first_name,last_name,active,face_registered,classrooms(grade,room)').single()) as any;
+    const changes:any={student_code:String(data.studentCode||'').trim(),first_name:String(data.firstName||'').trim(),last_name:String(data.lastName||'').trim(),grade,room,classroom_id:classroom.id,updated_at:new Date().toISOString()};if(Object.hasOwn(data,'portraitData'))changes.portrait_data=portraitValue(data.portraitData);
+    const row=checked(await db.from('students').update(changes).eq('id',id).eq('active',true).select('id,student_code,first_name,last_name,portrait_data,active,face_registered,classrooms(grade,room)').single()) as any;
     await log(user.id,'student.update','student',id);return ok(studentDto(row,await consentMap([id])));
   }
   if(studentAction&&method==='DELETE'){
